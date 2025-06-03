@@ -126,7 +126,26 @@ jobs:
           main_refactored.py
         echo "PyInstaller build completed"
 
-    - name: 🔍 Debug build output
+    - name: 🔍 Debug build output (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: powershell
+      run: |
+        echo "=== Listing dist directory ==="
+        if (Test-Path "dist") {
+          Get-ChildItem -Path dist\ -Force -Recurse
+        } else {
+          echo "dist directory not found"
+        }
+        echo "=== Checking for executable ==="
+        if (Test-Path "dist\ParadoxModTranslator.exe") {
+          echo "✅ ParadoxModTranslator.exe found"
+          Get-Item "dist\ParadoxModTranslator.exe" | Select-Object Name, Length, LastWriteTime
+        } else {
+          echo "❌ ParadoxModTranslator.exe not found"
+        }
+
+    - name: 🔍 Debug build output (Linux/macOS)
+      if: matrix.os != 'windows-latest'
       run: |
         echo "=== Listing dist directory ==="
         ls -la dist/ || echo "dist directory not found"
@@ -135,18 +154,26 @@ jobs:
 
     - name: 📁 Prepare artifacts (Windows)
       if: matrix.os == 'windows-latest'
-      shell: bash
+      shell: powershell
       run: |
-        mkdir release
-        if [ -d "dist/ParadoxModTranslator" ]; then
-          cp -r dist/ParadoxModTranslator/* release/
-        else
-          echo "Warning: dist/ParadoxModTranslator not found, copying dist contents"
-          cp -r dist/* release/
-        fi
-        cp README.md release/ || echo "README.md not found"
-        cp CONFIGURATION_GUIDE.md release/ || echo "CONFIGURATION_GUIDE.md not found"
-        echo "Build completed on $(date)" > release/BUILD_INFO.txt
+        New-Item -ItemType Directory -Name "release" -Force
+        if (Test-Path "dist\ParadoxModTranslator") {
+          Copy-Item -Path "dist\ParadoxModTranslator\*" -Destination "release\" -Recurse -Force
+        } else {
+          Write-Host "Warning: dist\ParadoxModTranslator not found, copying dist contents"
+          Copy-Item -Path "dist\*" -Destination "release\" -Recurse -Force
+        }
+        if (Test-Path "README.md") {
+          Copy-Item -Path "README.md" -Destination "release\" -Force
+        } else {
+          Write-Host "README.md not found"
+        }
+        if (Test-Path "CONFIGURATION_GUIDE.md") {
+          Copy-Item -Path "CONFIGURATION_GUIDE.md" -Destination "release\" -Force
+        } else {
+          Write-Host "CONFIGURATION_GUIDE.md not found"
+        }
+        "Build completed on $(Get-Date)" | Out-File -FilePath "release\BUILD_INFO.txt" -Encoding UTF8
 
     - name: 📁 Prepare artifacts (Linux/macOS)
       if: matrix.os != 'windows-latest'

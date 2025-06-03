@@ -90,6 +90,31 @@ jobs:
       run: |
         pyinstaller --onefile --windowed --name ParadoxModTranslator main_refactored.py
 
-    - name: ✅ Verify build
+    - name: ✅ Verify build (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: powershell
       run: |
+        echo "=== Listing dist directory ==="
+        Get-ChildItem -Path dist\ -Force
+        echo "=== Checking executable ==="
+        if (Test-Path "dist\ParadoxModTranslator.exe") {
+          echo "✅ ParadoxModTranslator.exe found"
+          Get-Item "dist\ParadoxModTranslator.exe" | Select-Object Name, Length, LastWriteTime
+        } else {
+          echo "❌ ParadoxModTranslator.exe not found"
+          exit 1
+        }
+
+    - name: ✅ Verify build (Linux/macOS)
+      if: matrix.os != 'windows-latest'
+      run: |
+        echo "=== Listing dist directory ==="
         ls -la dist/
+        echo "=== Checking executable ==="
+        if [ -f "dist/ParadoxModTranslator" ]; then
+          echo "✅ ParadoxModTranslator found"
+          ls -la dist/ParadoxModTranslator
+        else
+          echo "❌ ParadoxModTranslator not found"
+          exit 1
+        fi
