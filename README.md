@@ -24,7 +24,7 @@ Paradox_Mod_Translator/
 ├── gui/                    # 用户界面
 ├── utils/                  # 工具模块
 ├── tests/                  # 测试模块
-├── main_refactored.py      # 主程序（重构版）
+├── main.py                 # 主程序
 ├── start.py               # 启动器
 └── run_tests.py           # 测试运行器
 ```
@@ -50,7 +50,7 @@ python start.py
 
 2. **运行程序**
    ```bash
-   python main_refactored.py
+   python main.py
    ```
 
 ## 📋 系统要求

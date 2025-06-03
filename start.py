@@ -75,11 +75,8 @@ def start_application():
     print("\n🚀 启动 Paradox Mod Translator...")
     
     try:
-        # 尝试启动重构后的版本
-        if Path("main_refactored.py").exists():
-            subprocess.run([sys.executable, "main_refactored.py"])
-        # 如果重构版本不存在，尝试原版本
-        elif Path("main.py").exists():
+        # 启动主程序
+        if Path("main.py").exists():
             subprocess.run([sys.executable, "main.py"])
         else:
             print("❌ 错误: 找不到主程序文件")
@@ -120,7 +117,7 @@ def show_help():
 
 🆘 获取帮助:
    • 查看 README.md 文件
-   • 查看 REFACTORING_REPORT.md 了解架构
+   • 查看 REFACTORING_SUMMARY.md 了解架构
    • 运行测试: python run_tests.py
 
 📧 问题反馈:
@@ -141,7 +138,7 @@ def main():
             show_help()
             return
         elif sys.argv[1] in ['-v', '--version', 'version']:
-            print("版本: 2.0.0 (重构版)")
+            print("版本: 2.0.0")
             return
     
     # 检查Python版本
