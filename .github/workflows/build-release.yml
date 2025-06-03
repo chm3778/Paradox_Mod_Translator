@@ -1,0 +1,182 @@
+name: 🚀 Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # 触发条件：推送版本标签 (如 v1.0.0)
+  workflow_dispatch:  # 允许手动触发
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: Paradox-Mod-Translator-Windows
+            asset_name: Paradox-Mod-Translator-Windows.zip
+          - os: ubuntu-latest
+            artifact_name: Paradox-Mod-Translator-Linux
+            asset_name: Paradox-Mod-Translator-Linux.tar.gz
+          - os: macos-latest
+            artifact_name: Paradox-Mod-Translator-macOS
+            asset_name: Paradox-Mod-Translator-macOS.zip
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'  # 使用稳定的Python版本
+
+    - name: 📦 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: 🧪 Run tests
+      run: |
+        python run_tests.py
+
+    - name: 🔧 Build with PyInstaller (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        pyinstaller --clean --noconfirm build-config/windows.spec
+
+    - name: 🔧 Build with PyInstaller (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        pyinstaller --clean --noconfirm build-config/linux.spec
+
+    - name: 🔧 Build with PyInstaller (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        pyinstaller --clean --noconfirm build-config/macos.spec
+
+    - name: 📁 Prepare artifacts (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        mkdir release
+        cp -r dist/ParadoxModTranslator/* release/
+        cp README.md release/
+        cp CONFIGURATION_GUIDE.md release/
+        echo "Build completed on $(date)" > release/BUILD_INFO.txt
+
+    - name: 📁 Prepare artifacts (Linux/macOS)
+      if: matrix.os != 'windows-latest'
+      run: |
+        mkdir release
+        cp -r dist/ParadoxModTranslator/* release/
+        cp README.md release/
+        cp CONFIGURATION_GUIDE.md release/
+        echo "Build completed on $(date)" > release/BUILD_INFO.txt
+
+    - name: 🗜️ Create archive (Windows/macOS)
+      if: matrix.os == 'windows-latest' || matrix.os == 'macos-latest'
+      run: |
+        cd release
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          powershell Compress-Archive -Path * -DestinationPath ../${{ matrix.asset_name }}
+        else
+          zip -r ../${{ matrix.asset_name }} *
+        fi
+
+    - name: 🗜️ Create archive (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cd release
+        tar -czf ../${{ matrix.asset_name }} *
+
+    - name: 📤 Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.artifact_name }}
+        path: ${{ matrix.asset_name }}
+
+  release:
+    name: 🎉 Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 📥 Download all artifacts
+      uses: actions/download-artifact@v3
+
+    - name: 🏷️ Get version
+      id: get_version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: 📝 Generate release notes
+      id: release_notes
+      run: |
+        cat > release_notes.md << 'EOF'
+        # 🎮 Paradox Mod Translator ${{ steps.get_version.outputs.VERSION }}
+        
+        ## ✨ 新功能
+        - 完整的模块化架构重构
+        - 图形化翻译配置界面
+        - 多API密钥管理和负载均衡
+        - 智能启动器和依赖检查
+        - 全面的测试框架
+        
+        ## 🏗️ 架构改进
+        - 单一职责原则应用
+        - 设计模式实现（单例、工厂、策略、观察者）
+        - 类型提示和详细文档
+        - 强大的错误处理和输入验证
+        
+        ## 📦 下载说明
+        
+        ### Windows 用户
+        下载 `Paradox-Mod-Translator-Windows.zip`，解压后运行 `ParadoxModTranslator.exe`
+        
+        ### Linux 用户
+        下载 `Paradox-Mod-Translator-Linux.tar.gz`，解压后运行 `./ParadoxModTranslator`
+        
+        ### macOS 用户
+        下载 `Paradox-Mod-Translator-macOS.zip`，解压后运行 `ParadoxModTranslator`
+        
+        ## 🔧 系统要求
+        - 无需安装Python环境
+        - 需要网络连接访问Google Gemini API
+        - 建议4GB以上内存
+        
+        ## 📚 使用指南
+        请参考包含的 `README.md` 和 `CONFIGURATION_GUIDE.md` 文件
+        
+        ## 🐛 问题反馈
+        如遇到问题，请在 [GitHub Issues](https://github.com/chm3778/Paradox_Mod_Translator/issues) 中反馈
+        EOF
+
+    - name: 🎉 Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.get_version.outputs.VERSION }}
+        name: Paradox Mod Translator ${{ steps.get_version.outputs.VERSION }}
+        body_path: release_notes.md
+        draft: false
+        prerelease: false
+        files: |
+          Paradox-Mod-Translator-Windows/Paradox-Mod-Translator-Windows.zip
+          Paradox-Mod-Translator-Linux/Paradox-Mod-Translator-Linux.tar.gz
+          Paradox-Mod-Translator-macOS/Paradox-Mod-Translator-macOS.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

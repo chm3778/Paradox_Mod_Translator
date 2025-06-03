@@ -52,13 +52,13 @@ ttkbootstrap>=1.10.1
 # sphinx-rtd-theme>=1.2.0  # Read the Docs主题
 
 # ============================================================================
-# 打包和分发工具 - Packaging & Distribution Tools (可选)
+# 打包和分发工具 - Packaging & Distribution Tools
 # ============================================================================
 
 # pyinstaller - 将Python程序打包为可执行文件
-# pyinstaller>=5.0.0
+pyinstaller>=5.0.0
 
-# cx-Freeze - 另一个Python程序打包工具
+# cx-Freeze - 另一个Python程序打包工具（可选）
 # cx-Freeze>=6.0.0
 
 # ============================================================================

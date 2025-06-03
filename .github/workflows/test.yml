@@ -1,0 +1,77 @@
+name: 🧪 Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }} with Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.9', '3.10', '3.11']
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🐍 Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: 📦 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements-minimal.txt
+
+    - name: 🧪 Run tests
+      run: |
+        python run_tests.py
+
+    - name: 🔧 Test configuration
+      run: |
+        python test_configuration.py
+
+  build-test:
+    name: Test Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: 📦 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: 🧪 Run tests first
+      run: |
+        python run_tests.py
+
+    - name: 🔧 Test PyInstaller build (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        pyinstaller --onefile --windowed --name ParadoxModTranslator main_refactored.py
+
+    - name: 🔧 Test PyInstaller build (Linux/macOS)
+      if: matrix.os != 'windows-latest'
+      run: |
+        pyinstaller --onefile --windowed --name ParadoxModTranslator main_refactored.py
+
+    - name: ✅ Verify build
+      run: |
+        ls -la dist/
