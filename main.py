@@ -9,7 +9,7 @@ Paradox Mod Translator - 主程序
 import tkinter as tk
 from tkinter import ttk, scrolledtext, filedialog, messagebox
 import ttkbootstrap as ttkb
-from ttkbootstrap.constants import BOTH, LEFT, RIGHT, X
+from ttkbootstrap.constants import BOTH, LEFT, RIGHT, X, Y
 import threading
 import time
 import os
@@ -20,7 +20,10 @@ from config.config_manager import ConfigManager
 from parsers.yml_parser import YMLParser
 from core.api_key_manager import APIKeyManager
 from core.parallel_translator import ParallelTranslator
+from core.model_manager import ModelManager
+
 from utils.logging_utils import ApplicationLogger
+from utils.file_utils import FileProcessor
 
 
 class ModTranslatorApp:
@@ -37,8 +40,14 @@ class ModTranslatorApp:
         # 初始化解析器
         self.yml_parser = YMLParser()
 
+        # 初始化文件处理器
+        self.file_processor = FileProcessor(self.yml_parser)
+
         # 初始化API密钥管理器
         self.api_key_manager = APIKeyManager(self.config_manager)
+
+        # 初始化模型管理器
+        self.model_manager = ModelManager(self.config_manager, self)
 
         # 初始化并行翻译器
         self.parallel_translator = ParallelTranslator(self, self.config_manager)
@@ -231,8 +240,30 @@ class ModTranslatorApp:
         files_frame.pack(fill=BOTH, expand=True)
         
         # 文件列表
-        self.files_listbox = tk.Listbox(files_frame, height=10)
-        self.files_listbox.pack(fill=BOTH, expand=True)
+        self.files_listbox = tk.Listbox(files_frame, height=8)
+        self.files_listbox.pack(fill=BOTH, expand=True, pady=(0, 5))
+
+        # 目录结构预览按钮
+        preview_frame = ttk.Frame(files_frame)
+        preview_frame.pack(fill=X)
+
+        self.preview_structure_button = ttkb.Button(
+            preview_frame,
+            text="📁 预览目录结构",
+            style="outline.TButton",
+            command=self._preview_directory_structure,
+            width=20
+        )
+        self.preview_structure_button.pack(side=LEFT, padx=(0, 5))
+
+        self.analyze_structure_button = ttkb.Button(
+            preview_frame,
+            text="🔍 分析目录",
+            style="outline.TButton",
+            command=self._analyze_directory_structure,
+            width=15
+        )
+        self.analyze_structure_button.pack(side=LEFT)
 
     def _create_control_buttons(self, parent):
         """创建控制按钮"""
@@ -319,6 +350,10 @@ class ModTranslatorApp:
             if hasattr(self, 'api_keys_listbox'):
                 self._refresh_api_keys_list()
 
+            # 初始化模型状态
+            if hasattr(self, 'model_status_label'):
+                self._initialize_model_status()
+
             self.log_message("配置加载完成", "info")
         except Exception as e:
             self.log_message(f"加载配置时发生错误: {e}", "error")
@@ -336,14 +371,70 @@ class ModTranslatorApp:
             self.log_message("翻译正在进行中，请等待完成或停止当前翻译", "warn")
             return
 
+        # 验证翻译前置条件
+        source_lang = self.source_language_code.get()
+        target_lang = self.target_language_code.get()
+        api_keys = self.config_manager.get_api_keys()
+
+        is_valid, message = self.file_processor.validate_translation_prerequisites(
+            api_keys, source_lang, target_lang, self.files_for_translation
+        )
+
+        if not is_valid:
+            messagebox.showerror("错误", message)
+            self.log_message(f"翻译失败：{message}", "error")
+            return
+
         self.log_message("开始翻译过程...", "info")
         self.translation_in_progress = True
         self.translate_button.config(state=tk.DISABLED)
         self.stop_button.config(state=tk.NORMAL)
 
-        # 这里会实现实际的翻译逻辑
-        # 为了简化，暂时只是模拟
-        self.root.after(3000, self._finish_translation_process)
+        # 在后台线程中执行实际翻译
+        translation_thread = threading.Thread(
+            target=self._execute_translation_workflow,
+            daemon=True
+        )
+        translation_thread.start()
+
+    def _execute_translation_workflow(self):
+        """执行翻译工作流程"""
+        try:
+            # 获取翻译参数
+            source_lang = self.source_language_code.get()
+            target_lang = self.target_language_code.get()
+            game_style = self.style_text.get(1.0, tk.END).strip() or self.game_mod_style_prompt.get()
+            model_name = self.selected_model_var.get()
+
+            self.log_message(f"翻译设置: {source_lang} -> {target_lang}, 模型: {model_name}", "info")
+
+            # 使用并行翻译器执行翻译
+            success = self.parallel_translator.translate_files(
+                self.files_for_translation,
+                source_lang,
+                target_lang,
+                game_style,
+                model_name
+            )
+
+            # 在UI线程中更新结果
+            self.root.after(0, self._on_translation_completed, success)
+
+        except Exception as e:
+            error_msg = f"翻译过程中发生错误: {e}"
+            self.log_message(error_msg, "error")
+            self.root.after(0, self._on_translation_completed, False)
+
+    def _on_translation_completed(self, success):
+        """翻译完成回调"""
+        if success:
+            self.log_message("翻译过程已成功完成", "info")
+            messagebox.showinfo("完成", "翻译已完成！请检查输出文件。")
+        else:
+            self.log_message("翻译过程失败", "error")
+            messagebox.showerror("失败", "翻译过程中发生错误，请查看日志了解详情。")
+
+        self._finish_translation_process()
 
     def _stop_translation_process(self):
         """停止翻译过程"""
@@ -563,6 +654,25 @@ class ModTranslatorApp:
         self.model_combo.pack(side=LEFT, padx=(5, 0))
         self.model_combo.bind('<<ComboboxSelected>>', self._on_model_changed)
 
+        # 刷新模型列表按钮
+        self.refresh_models_button = ttkb.Button(
+            model_select_frame,
+            text="🔄",
+            style="outline.TButton",
+            command=self._refresh_models,
+            width=3
+        )
+        self.refresh_models_button.pack(side=LEFT, padx=(5, 0))
+
+        # 模型状态标签
+        self.model_status_label = ttk.Label(
+            model_frame,
+            text="",
+            font=('Default', 8),
+            foreground="gray"
+        )
+        self.model_status_label.pack(anchor="w", pady=(5, 0))
+
     def _create_concurrency_settings(self, parent):
         """创建并发设置"""
         concurrency_frame = ttk.LabelFrame(parent, text="⚡ 并发设置", padding=(10, 5))
@@ -639,12 +749,7 @@ class ModTranslatorApp:
 
     def _get_available_models(self):
         """获取可用的AI模型列表"""
-        return [
-            "gemini-1.5-flash-latest",
-            "gemini-1.5-pro-latest",
-            "models/gemini-2.0-flash-lite",
-            "models/gemini-2.0-flash"
-        ]
+        return self.model_manager.get_available_models()
 
     def _on_language_changed(self, event=None):
         """语言选择改变事件"""
@@ -705,6 +810,10 @@ class ModTranslatorApp:
                 self._refresh_api_keys_list()
                 self.api_key_manager.reload_keys()
                 self.log_message("API密钥添加成功", "info")
+
+                # 自动刷新模型列表
+                self.log_message("正在刷新可用模型列表...", "info")
+                self._refresh_models()
             else:
                 messagebox.showwarning("警告", "API密钥已存在或添加失败")
 
@@ -779,32 +888,30 @@ class ModTranslatorApp:
 
     def _scan_yml_files(self, directory):
         """扫描目录中的YML文件"""
-        import os
-        yml_files = []
+        yml_files = self.file_processor.scan_yml_files(directory)
 
-        try:
-            for root, _, files in os.walk(directory):
-                for file in files:
-                    if file.lower().endswith(('.yml', '.yaml')):
-                        yml_files.append(os.path.join(root, file))
+        # 更新文件列表
+        self.files_for_translation = yml_files
+        self._refresh_file_list()
 
-            # 更新文件列表
-            self.files_for_translation = yml_files
-            self._refresh_file_list()
-
-            self.log_message(f"扫描完成，找到 {len(yml_files)} 个YML文件", "info")
-
-        except Exception as e:
-            self.log_message(f"扫描文件时发生错误: {e}", "error")
+        self.log_message(f"扫描完成，找到 {len(yml_files)} 个YML文件", "info")
 
     def _refresh_file_list(self):
         """刷新文件列表显示"""
         self.files_listbox.delete(0, tk.END)
 
         for file_path in self.files_for_translation:
-            # 只显示文件名
+            # 获取文件语言信息
+            lang_code, entry_count = self.file_processor.get_file_language_info(file_path)
             filename = os.path.basename(file_path)
-            self.files_listbox.insert(tk.END, filename)
+
+            # 显示文件名和语言信息
+            if lang_code:
+                display_text = f"{filename} [{lang_code}, {entry_count} 条目]"
+            else:
+                display_text = f"{filename} [未知语言]"
+
+            self.files_listbox.insert(tk.END, display_text)
 
     def _on_model_changed(self, event=None):
         """模型选择改变事件"""
@@ -813,6 +920,219 @@ class ModTranslatorApp:
         if model:
             self.config_manager.set_setting("selected_model", model)
             self.log_message(f"AI模型设置为: {model}", "info")
+
+    def _refresh_models(self):
+        """刷新模型列表"""
+        self.refresh_models_button.config(state=tk.DISABLED, text="⏳")
+        self.log_message("正在刷新模型列表...", "info")
+
+        def on_refresh_complete(models, error):
+            """刷新完成回调"""
+            def update_ui():
+                self.refresh_models_button.config(state=tk.NORMAL, text="🔄")
+
+                if error:
+                    self.log_message(f"刷新模型列表失败: {error}", "error")
+                    messagebox.showerror("错误", f"刷新模型列表失败:\n{error}")
+                else:
+                    # 更新下拉列表
+                    current_selection = self.selected_model_var.get()
+                    self.model_combo['values'] = models
+
+                    # 保持当前选择（如果仍然可用）
+                    if current_selection in models:
+                        self.selected_model_var.set(current_selection)
+                    elif models:
+                        self.selected_model_var.set(models[0])
+
+                    self.log_message(f"模型列表已更新，共 {len(models)} 个模型", "info")
+
+                    # 更新状态标签
+                    cache_status = self.model_manager.get_cache_status()
+                    if cache_status['cache_valid']:
+                        status_text = f"已缓存 {len(models)} 个模型 (来自API)"
+                    else:
+                        status_text = f"使用默认模型列表 ({len(models)} 个)"
+                    self.model_status_label.config(text=status_text)
+
+            # 在UI线程中更新界面
+            self.root.after(0, update_ui)
+
+        # 异步刷新模型列表
+        self.model_manager.refresh_models_async(on_refresh_complete)
+
+    def _initialize_model_status(self):
+        """初始化模型状态显示"""
+        try:
+            models = self.model_manager.get_available_models()
+            cache_status = self.model_manager.get_cache_status()
+
+            if cache_status['cache_valid']:
+                status_text = f"已缓存 {len(models)} 个模型 (来自API)"
+            else:
+                status_text = f"使用默认模型列表 ({len(models)} 个)"
+
+            self.model_status_label.config(text=status_text)
+            self.log_message(f"模型状态: {status_text}", "debug")
+        except Exception as e:
+            self.log_message(f"初始化模型状态失败: {e}", "error")
+
+    def _preview_directory_structure(self):
+        """预览目录结构"""
+        if not self.files_for_translation:
+            messagebox.showwarning("警告", "请先选择要翻译的文件")
+            return
+
+        source_lang = self.source_language_code.get()
+        target_lang = self.target_language_code.get()
+
+        if not source_lang or not target_lang:
+            messagebox.showwarning("警告", "请先设置源语言和目标语言")
+            return
+
+        # 过滤源语言文件
+        source_files = self.file_processor.filter_source_language_files(
+            self.files_for_translation, source_lang
+        )
+
+        if not source_files:
+            messagebox.showwarning("警告", f"没有找到源语言({source_lang})的文件")
+            return
+
+        # 获取预览结构
+        preview_pairs = self.file_processor.preview_translation_structure(
+            source_files, target_lang
+        )
+
+        # 创建预览窗口
+        self._show_structure_preview_window(preview_pairs, target_lang)
+
+    def _analyze_directory_structure(self):
+        """分析目录结构"""
+        root_path = self.localization_root_path.get()
+        if not root_path or not os.path.exists(root_path):
+            messagebox.showwarning("警告", "请先设置有效的本地化目录")
+            return
+
+        # 分析目录结构
+        language_files = self.file_processor.analyze_directory_structure(root_path)
+
+        if not language_files:
+            messagebox.showinfo("信息", "在指定目录中没有找到YML文件")
+            return
+
+        # 创建分析结果窗口
+        self._show_structure_analysis_window(language_files)
+
+    def _show_structure_preview_window(self, preview_pairs, target_lang):
+        """显示目录结构预览窗口"""
+        preview_window = tk.Toplevel(self.root)
+        preview_window.title(f"目录结构预览 - {target_lang}")
+        preview_window.geometry("800x600")
+        preview_window.transient(self.root)
+        preview_window.grab_set()
+
+        # 创建主框架
+        main_frame = ttk.Frame(preview_window, padding=10)
+        main_frame.pack(fill=BOTH, expand=True)
+
+        # 标题
+        title_label = ttk.Label(
+            main_frame,
+            text=f"翻译后文件将保存到以下位置 (目标语言: {target_lang})",
+            font=('Default', 12, 'bold')
+        )
+        title_label.pack(pady=(0, 10))
+
+        # 创建树形视图
+        tree_frame = ttk.Frame(main_frame)
+        tree_frame.pack(fill=BOTH, expand=True, pady=(0, 10))
+
+        tree = ttk.Treeview(tree_frame, columns=('target',), show='tree headings')
+        tree.heading('#0', text='源文件')
+        tree.heading('target', text='目标文件')
+        tree.column('#0', width=400)
+        tree.column('target', width=400)
+
+        # 添加滚动条
+        scrollbar = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+
+        tree.pack(side=LEFT, fill=BOTH, expand=True)
+        scrollbar.pack(side=RIGHT, fill=Y)
+
+        # 填充数据
+        for source_file, target_file in preview_pairs:
+            source_rel = os.path.relpath(source_file, self.localization_root_path.get())
+            target_rel = os.path.relpath(target_file, self.localization_root_path.get())
+            tree.insert('', 'end', text=source_rel, values=(target_rel,))
+
+        # 按钮框架
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(fill=X)
+
+        ttk.Button(
+            button_frame,
+            text="关闭",
+            command=preview_window.destroy
+        ).pack(side=RIGHT)
+
+    def _show_structure_analysis_window(self, language_files):
+        """显示目录结构分析窗口"""
+        analysis_window = tk.Toplevel(self.root)
+        analysis_window.title("目录结构分析")
+        analysis_window.geometry("600x500")
+        analysis_window.transient(self.root)
+        analysis_window.grab_set()
+
+        # 创建主框架
+        main_frame = ttk.Frame(analysis_window, padding=10)
+        main_frame.pack(fill=BOTH, expand=True)
+
+        # 标题
+        title_label = ttk.Label(
+            main_frame,
+            text="本地化目录结构分析",
+            font=('Default', 12, 'bold')
+        )
+        title_label.pack(pady=(0, 10))
+
+        # 创建文本框显示分析结果
+        text_frame = ttk.Frame(main_frame)
+        text_frame.pack(fill=BOTH, expand=True, pady=(0, 10))
+
+        analysis_text = scrolledtext.ScrolledText(
+            text_frame,
+            wrap=tk.WORD,
+            font=('Consolas', 10)
+        )
+        analysis_text.pack(fill=BOTH, expand=True)
+
+        # 填充分析结果
+        analysis_text.insert(tk.END, f"发现 {len(language_files)} 种语言的文件:\n\n")
+
+        for lang, files in language_files.items():
+            analysis_text.insert(tk.END, f"📁 {lang} ({len(files)} 个文件):\n")
+            for file_path in files[:5]:  # 只显示前5个文件
+                rel_path = os.path.relpath(file_path, self.localization_root_path.get())
+                analysis_text.insert(tk.END, f"  - {rel_path}\n")
+
+            if len(files) > 5:
+                analysis_text.insert(tk.END, f"  ... 还有 {len(files) - 5} 个文件\n")
+
+            analysis_text.insert(tk.END, "\n")
+
+        analysis_text.config(state=tk.DISABLED)
+
+        # 按钮框架
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(fill=X)
+
+        ttk.Button(
+            button_frame,
+            text="关闭",
+            command=analysis_window.destroy
+        ).pack(side=RIGHT)
 
     def _on_concurrency_changed(self):
         """并发设置改变事件"""

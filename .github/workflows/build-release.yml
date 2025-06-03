@@ -90,8 +90,13 @@ jobs:
           "--hidden-import=parsers.yml_parser",
           "--hidden-import=core.api_key_manager",
           "--hidden-import=core.parallel_translator",
+          "--hidden-import=core.gemini_translator",
+          "--hidden-import=core.translation_workflow",
+          "--hidden-import=core.model_manager",
           "--hidden-import=utils.logging_utils",
-          "main_refactored.py"
+          "--hidden-import=utils.file_utils",
+          "--hidden-import=utils.validation",
+          "main.py"
         )
         & pyinstaller $pyinstallerArgs
         Write-Host "PyInstaller build completed"
@@ -114,8 +119,13 @@ jobs:
           --hidden-import=parsers.yml_parser \
           --hidden-import=core.api_key_manager \
           --hidden-import=core.parallel_translator \
+          --hidden-import=core.gemini_translator \
+          --hidden-import=core.translation_workflow \
+          --hidden-import=core.model_manager \
           --hidden-import=utils.logging_utils \
-          main_refactored.py
+          --hidden-import=utils.file_utils \
+          --hidden-import=utils.validation \
+          main.py
         echo "PyInstaller build completed"
 
     - name: 🔧 Build with PyInstaller (macOS)
@@ -136,8 +146,13 @@ jobs:
           --hidden-import=parsers.yml_parser \
           --hidden-import=core.api_key_manager \
           --hidden-import=core.parallel_translator \
+          --hidden-import=core.gemini_translator \
+          --hidden-import=core.translation_workflow \
+          --hidden-import=core.model_manager \
           --hidden-import=utils.logging_utils \
-          main_refactored.py
+          --hidden-import=utils.file_utils \
+          --hidden-import=utils.validation \
+          main.py
         echo "PyInstaller build completed"
 
     - name: 🔍 Debug build output (Windows)
@@ -257,17 +272,18 @@ jobs:
         # 🎮 Paradox Mod Translator ${{ steps.get_version.outputs.VERSION }}
         
         ## ✨ 新功能
-        - 完整的模块化架构重构
-        - 图形化翻译配置界面
-        - 多API密钥管理和负载均衡
-        - 智能启动器和依赖检查
-        - 全面的测试框架
-        
+        - 🤖 AI模型配置界面自动拉取可用模型
+        - 📁 智能目录结构创建（与源语言文件夹等同级）
+        - 🔄 实时模型列表刷新和缓存机制
+        - 📋 目录结构预览和分析功能
+        - 🎯 完整的翻译工作流程重构
+
         ## 🏗️ 架构改进
-        - 单一职责原则应用
-        - 设计模式实现（单例、工厂、策略、观察者）
-        - 类型提示和详细文档
-        - 强大的错误处理和输入验证
+        - 🧩 模块化架构：ModelManager、FileProcessor、TranslationWorkflow
+        - 🔧 智能路径处理和语言检测
+        - 📊 目录结构验证和权限检查
+        - 🎨 用户友好的预览界面
+        - 🚀 异步模型获取和UI更新
         
         ## 📦 下载说明
         

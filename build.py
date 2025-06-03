@@ -159,7 +159,7 @@ def main():
     print("=" * 50)
     
     # 检查当前目录
-    if not Path("main_refactored.py").exists():
+    if not Path("main.py").exists():
         print("❌ 请在项目根目录运行此脚本")
         sys.exit(1)
     

@@ -65,6 +65,9 @@ class ParallelTranslator:
         """
         if num_workers is None:
             num_workers = self.config_manager.get_setting("max_concurrent_tasks", 3)
+
+        # 确保num_workers是整数
+        num_workers = int(num_workers) if num_workers is not None else 3
         
         with self.lock:
             # 停止现有工作线程
@@ -130,13 +133,14 @@ class ParallelTranslator:
             return
 
         while not self.stop_flag.is_set():
+            task = None
+            api_key = None
             try:
-                task = None
                 try:
                     task = self.translation_queue.get(timeout=1.0)
                 except queue.Empty:
                     continue
-                
+
                 # 获取API密钥
                 api_key = self.api_key_manager.get_next_key()
                 if not api_key:
@@ -332,3 +336,35 @@ class ParallelTranslator:
             for translator in self.translators.values():
                 translator.reset_statistics()
             self.pending_reviews.clear()
+
+    def translate_files(
+        self,
+        source_files: List[str],
+        source_lang: str,
+        target_lang: str,
+        game_style: str,
+        model_name: str
+    ) -> bool:
+        """
+        翻译文件列表（高级接口）
+
+        Args:
+            source_files: 源文件路径列表
+            source_lang: 源语言
+            target_lang: 目标语言
+            game_style: 游戏风格
+            model_name: 模型名称
+
+        Returns:
+            是否成功完成翻译
+        """
+        # 导入翻译工作流程协调器
+        from .translation_workflow import TranslationWorkflow
+
+        # 创建工作流程实例
+        workflow = TranslationWorkflow(self.app_ref, self.config_manager)
+
+        # 执行翻译
+        return workflow.execute_translation(
+            source_files, source_lang, target_lang, game_style, model_name
+        )

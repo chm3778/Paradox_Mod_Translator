@@ -7,5 +7,7 @@
 from .api_key_manager import APIKeyManager
 from .gemini_translator import GeminiTranslator
 from .parallel_translator import ParallelTranslator
+from .translation_workflow import TranslationWorkflow
+from .model_manager import ModelManager
 
-__all__ = ['APIKeyManager', 'GeminiTranslator', 'ParallelTranslator']
+__all__ = ['APIKeyManager', 'GeminiTranslator', 'ParallelTranslator', 'TranslationWorkflow', 'ModelManager']
