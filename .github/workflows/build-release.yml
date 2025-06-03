@@ -62,25 +62,33 @@ jobs:
 
     - name: 🔧 Build with PyInstaller (Windows)
       if: matrix.os == 'windows-latest'
+      shell: powershell
       run: |
-        echo "Starting PyInstaller build for Windows..."
-        pyinstaller --clean --noconfirm --onedir --windowed --name ParadoxModTranslator ^
-          --hidden-import=google.generativeai ^
-          --hidden-import=ttkbootstrap ^
-          --hidden-import=tkinter ^
-          --hidden-import=tkinter.ttk ^
-          --hidden-import=tkinter.filedialog ^
-          --hidden-import=tkinter.messagebox ^
-          --hidden-import=tkinter.scrolledtext ^
-          --hidden-import=tkinter.simpledialog ^
-          --hidden-import=config.constants ^
-          --hidden-import=config.config_manager ^
-          --hidden-import=parsers.yml_parser ^
-          --hidden-import=core.api_key_manager ^
-          --hidden-import=core.parallel_translator ^
-          --hidden-import=utils.logging_utils ^
-          main_refactored.py
-        echo "PyInstaller build completed"
+        Write-Host "Starting PyInstaller build for Windows..."
+        $pyinstallerArgs = @(
+          "--clean",
+          "--noconfirm",
+          "--onedir",
+          "--windowed",
+          "--name", "ParadoxModTranslator",
+          "--hidden-import=google.generativeai",
+          "--hidden-import=ttkbootstrap",
+          "--hidden-import=tkinter",
+          "--hidden-import=tkinter.ttk",
+          "--hidden-import=tkinter.filedialog",
+          "--hidden-import=tkinter.messagebox",
+          "--hidden-import=tkinter.scrolledtext",
+          "--hidden-import=tkinter.simpledialog",
+          "--hidden-import=config.constants",
+          "--hidden-import=config.config_manager",
+          "--hidden-import=parsers.yml_parser",
+          "--hidden-import=core.api_key_manager",
+          "--hidden-import=core.parallel_translator",
+          "--hidden-import=utils.logging_utils",
+          "main_refactored.py"
+        )
+        & pyinstaller $pyinstallerArgs
+        Write-Host "PyInstaller build completed"
 
     - name: 🔧 Build with PyInstaller (Linux)
       if: matrix.os == 'ubuntu-latest'
