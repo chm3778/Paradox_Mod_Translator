@@ -40,7 +40,8 @@ def run_specific_test(test_module):
 
 
 if __name__ == '__main__':
-    print("🧪 Paradox Mod Translator - 测试套件")
+    # 使用ASCII字符避免Windows编码问题
+    print("Paradox Mod Translator - Test Suite")
     print("=" * 50)
     
     if len(sys.argv) > 1:
@@ -55,8 +56,8 @@ if __name__ == '__main__':
     
     print("=" * 50)
     if success:
-        print("✅ 所有测试通过！")
+        print("All tests passed!")
         sys.exit(0)
     else:
-        print("❌ 部分测试失败！")
+        print("Some tests failed!")
         sys.exit(1)

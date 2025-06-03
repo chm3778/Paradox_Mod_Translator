@@ -18,7 +18,7 @@ from config.config_manager import ConfigManager
 
 def test_basic_config_operations():
     """测试基本配置操作"""
-    print("🧪 测试基本配置操作...")
+    print("Testing basic config operations...")
     
     # 创建临时配置文件
     with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
@@ -40,7 +40,7 @@ def test_basic_config_operations():
         assert config_manager.get_setting("max_concurrent_tasks") == 5
         assert config_manager.get_setting("api_call_delay") == 2.5
         
-        print("✅ 基本配置操作测试通过")
+        print("Basic config operations test passed")
         
     finally:
         # 清理临时文件
@@ -50,7 +50,7 @@ def test_basic_config_operations():
 
 def test_api_key_management():
     """测试API密钥管理"""
-    print("🧪 测试API密钥管理...")
+    print("Testing API key management...")
     
     # 创建临时配置文件
     with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
@@ -89,7 +89,7 @@ def test_api_key_management():
         assert new_key not in keys
         assert len(keys) == 1
         
-        print("✅ API密钥管理测试通过")
+        print("API key management test passed")
         
     finally:
         if os.path.exists(temp_config_path):
@@ -98,7 +98,7 @@ def test_api_key_management():
 
 def test_config_validation():
     """测试配置验证"""
-    print("🧪 测试配置验证...")
+    print("Testing config validation...")
     
     with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
         temp_config_path = f.name
@@ -125,7 +125,7 @@ def test_config_validation():
         errors = config_manager.validate_config()
         print(f"   修正后错误数: {len(errors)}")
         
-        print("✅ 配置验证测试通过")
+        print("Config validation test passed")
         
     finally:
         if os.path.exists(temp_config_path):
@@ -134,7 +134,7 @@ def test_config_validation():
 
 def test_config_export_import():
     """测试配置导出导入"""
-    print("🧪 测试配置导出导入...")
+    print("Testing config export/import...")
     
     with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
         temp_config_path = f.name
@@ -169,7 +169,7 @@ def test_config_export_import():
         keys = new_config_manager.get_api_keys()
         assert "AIzaSyTest1234567890123456789012345678" in keys
         
-        print("✅ 配置导出导入测试通过")
+        print("Config export/import test passed")
         
         # 清理新配置文件
         if os.path.exists(new_config_path):
@@ -184,7 +184,7 @@ def test_config_export_import():
 
 def test_legacy_migration():
     """测试旧版配置迁移"""
-    print("🧪 测试旧版配置迁移...")
+    print("Testing legacy config migration...")
     
     with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
         temp_config_path = f.name
@@ -211,7 +211,7 @@ def test_legacy_migration():
         assert "api_key" not in config
         assert "api_keys" in config
         
-        print("✅ 旧版配置迁移测试通过")
+        print("Legacy config migration test passed")
         
     finally:
         if os.path.exists(temp_config_path):
@@ -220,7 +220,7 @@ def test_legacy_migration():
 
 def main():
     """运行所有测试"""
-    print("🧪 Paradox Mod Translator - 配置功能测试")
+    print("Paradox Mod Translator - Configuration Tests")
     print("=" * 50)
     
     try:
@@ -231,10 +231,10 @@ def main():
         test_legacy_migration()
         
         print("\n" + "=" * 50)
-        print("🎉 所有配置功能测试通过！")
+        print("All configuration tests passed!")
         
     except Exception as e:
-        print(f"\n❌ 测试失败: {e}")
+        print(f"\nTest failed: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)

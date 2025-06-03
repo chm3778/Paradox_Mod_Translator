@@ -1,0 +1,16 @@
+# Paradox Mod Translator - CI/CD 构建依赖
+# 
+# 专门用于GitHub Actions CI/CD流水线的最小依赖包列表
+# 只包含构建和测试所必需的核心依赖，减少安装时间和潜在冲突
+
+# 核心依赖 - Core Dependencies
+google-generativeai>=0.3.0
+ttkbootstrap>=1.10.1
+
+# 构建工具 - Build Tools
+pyinstaller>=5.0.0
+
+# 注意：
+# 1. 这个文件专门用于CI/CD环境，包含最少的依赖
+# 2. 如果需要完整的开发环境，请使用 requirements.txt
+# 3. 如果只需要运行应用程序，请使用 requirements-minimal.txt
