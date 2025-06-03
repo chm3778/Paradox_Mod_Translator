@@ -37,6 +37,12 @@ jobs:
       with:
         python-version: '3.11'  # 使用稳定的Python版本
 
+    - name: 📦 Install system dependencies (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3-tk
+
     - name: 📦 Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -64,6 +70,7 @@ jobs:
 
     - name: 📁 Prepare artifacts (Windows)
       if: matrix.os == 'windows-latest'
+      shell: bash
       run: |
         mkdir release
         cp -r dist/ParadoxModTranslator/* release/
@@ -80,15 +87,18 @@ jobs:
         cp CONFIGURATION_GUIDE.md release/
         echo "Build completed on $(date)" > release/BUILD_INFO.txt
 
-    - name: 🗜️ Create archive (Windows/macOS)
-      if: matrix.os == 'windows-latest' || matrix.os == 'macos-latest'
+    - name: 🗜️ Create archive (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: powershell
       run: |
         cd release
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          powershell Compress-Archive -Path * -DestinationPath ../${{ matrix.asset_name }}
-        else
-          zip -r ../${{ matrix.asset_name }} *
-        fi
+        Compress-Archive -Path * -DestinationPath ../${{ matrix.asset_name }}
+
+    - name: 🗜️ Create archive (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        cd release
+        zip -r ../${{ matrix.asset_name }} *
 
     - name: 🗜️ Create archive (Linux)
       if: matrix.os == 'ubuntu-latest'
@@ -97,7 +107,7 @@ jobs:
         tar -czf ../${{ matrix.asset_name }} *
 
     - name: 📤 Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.artifact_name }}
         path: ${{ matrix.asset_name }}
@@ -113,7 +123,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: 📥 Download all artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
 
     - name: 🏷️ Get version
       id: get_version
