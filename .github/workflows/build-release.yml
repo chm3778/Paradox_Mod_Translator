@@ -11,6 +11,12 @@ on:
         required: true
         default: 'v1.0.0'
 
+# 设置工作流权限
+permissions:
+  contents: write  # 允许创建Release和上传文件
+  packages: read   # 允许读取包
+  actions: read    # 允许读取Actions
+
 jobs:
   build:
     name: Build on ${{ matrix.os }}
