@@ -654,6 +654,7 @@ class ModTranslatorApp:
 
     def _on_language_changed(self, event=None):
         """语言选择改变事件"""
+        _ = event  # 标记参数已使用
         source_lang = self.source_language_code.get()
         target_lang = self.target_language_code.get()
 
@@ -798,7 +799,7 @@ class ModTranslatorApp:
         yml_files = []
 
         try:
-            for root, dirs, files in os.walk(directory):
+            for root, _, files in os.walk(directory):
                 for file in files:
                     if file.lower().endswith(('.yml', '.yaml')):
                         yml_files.append(os.path.join(root, file))
@@ -823,6 +824,7 @@ class ModTranslatorApp:
 
     def _on_model_changed(self, event=None):
         """模型选择改变事件"""
+        _ = event  # 标记参数已使用
         model = self.selected_model_var.get()
         if model:
             self.config_manager.set_setting("selected_model", model)
