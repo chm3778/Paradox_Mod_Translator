@@ -29,7 +29,6 @@ Paradox_Mod_Translator/
 └── run_tests.py           # 测试运行器
 ```
 
-详细的架构说明请参考 [REFACTORING_REPORT.md](REFACTORING_REPORT.md)
 
 ## 🚀 快速开始
 
