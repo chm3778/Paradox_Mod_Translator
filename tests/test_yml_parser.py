@@ -185,6 +185,14 @@ class TestYMLParser(unittest.TestCase):
         numbered_entry = next((entry for entry in entries if entry['key'] == 'test_key_4'), None)
         self.assertIsNotNone(numbered_entry)
         self.assertEqual(numbered_entry['value'], "This is a numbered entry")
+
+    def test_custom_placeholder_patterns(self):
+        """测试自定义占位符正则"""
+        patterns = [r'\{[^}]+\}']
+        parser = YMLParser(placeholder_patterns=patterns)
+        text = "Hello {player}"
+        placeholders = parser.extract_placeholders(text, regexes=parser.placeholder_regexes)
+        self.assertIn("{player}", placeholders)
     
     def test_empty_file_handling(self):
         """测试空文件处理"""

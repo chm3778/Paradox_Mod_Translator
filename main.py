@@ -41,7 +41,7 @@ class ModTranslatorApp:
         self.logger = ApplicationLogger()
 
         # 初始化解析器
-        self.yml_parser = YMLParser()
+        self.yml_parser = YMLParser(config_manager=self.config_manager)
 
         # 初始化文件处理器
         self.file_processor = FileProcessor(self.yml_parser)

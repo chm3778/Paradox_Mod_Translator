@@ -7,7 +7,7 @@
 import json
 import os
 from typing import Any, Dict, List, Optional
-from .constants import DEFAULT_API_KEY_PLACEHOLDER
+from .constants import DEFAULT_API_KEY_PLACEHOLDER, DEFAULT_PLACEHOLDER_PATTERNS
 
 
 class ConfigManager:
@@ -32,7 +32,8 @@ class ConfigManager:
             "max_concurrent_tasks": 3,
             "auto_review_mode": True,
             "delayed_review": True,
-            "key_rotation_strategy": "round_robin"
+            "key_rotation_strategy": "round_robin",
+            "placeholder_patterns": DEFAULT_PLACEHOLDER_PATTERNS
         }
         self.config = self.load_config()
         self._migrate_legacy_api_key()

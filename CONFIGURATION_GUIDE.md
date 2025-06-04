@@ -91,7 +91,13 @@
     "auto_review_mode": true,
     "delayed_review": true,
     "game_mod_style": "Strategy game localization, formal and precise tone.",
-    "key_rotation_strategy": "round_robin"
+    "key_rotation_strategy": "round_robin",
+    "placeholder_patterns": [
+        "(\\$.*?\\$)",
+        "(\\[.*?\\])",
+        "(@\\w+!)",
+        "(#\\w+(?:;\\w+)*.*?#!|\\S*#!)"
+    ]
 }
 ```
 
@@ -130,6 +136,19 @@
 }
 ```
 - 适用于: 大量文件翻译，后期统一质检
+
+### 4. 自定义占位符模式
+```json
+{
+    "placeholder_patterns": [
+        "(\\$.*?\\$)",
+        "(\\[.*?\\])",
+        "(@\\w+!)",
+        "(\\{[^}]+\\})"
+    ]
+}
+```
+- 适用于: 需要额外占位符格式时
 
 ## 🔍 故障排除
 

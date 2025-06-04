@@ -7,10 +7,26 @@ YML文件解析器
 import os
 import re
 from typing import List, Dict, Set, Tuple, Optional, Any
+from config.config_manager import ConfigManager
+from config.constants import DEFAULT_PLACEHOLDER_PATTERNS
 
 
 class YMLParser:
     """YML文件解析器，专门处理Paradox游戏的本地化文件"""
+
+    def __init__(
+        self,
+        placeholder_patterns: Optional[List[str]] = None,
+        config_manager: Optional[ConfigManager] = None,
+    ) -> None:
+        """初始化解析器并加载占位符模式"""
+        if placeholder_patterns is None and config_manager is not None:
+            placeholder_patterns = config_manager.get_setting(
+                "placeholder_patterns", DEFAULT_PLACEHOLDER_PATTERNS
+            )
+        if placeholder_patterns is None:
+            placeholder_patterns = DEFAULT_PLACEHOLDER_PATTERNS
+        self.placeholder_regexes = [re.compile(p) for p in placeholder_patterns]
     
     # 正则表达式模式
     ENTRY_REGEX = re.compile(
@@ -20,15 +36,12 @@ class YMLParser:
     LANGUAGE_HEADER_REGEX = re.compile(r"^\s*l_([a-zA-Z_]+)\s*:\s*$", re.UNICODE)
     
     # 占位符正则表达式列表
-    PLACEHOLDER_REGEXES = [
-        re.compile(r'(\$.*?\$)'),       # 变量占位符，如$variable$
-        re.compile(r'(\[.*?\])'),       # 方括号占位符，如[player.GetName]
-        re.compile(r'(@\w+!)'),         # 图标占位符，如@icon!
-        re.compile(r'(#\w+(?:;\w+)*.*?#!|\S*#!)'), # 格式化标记，如#bold#文本#!
-    ]
+    PLACEHOLDER_REGEXES = [re.compile(p) for p in DEFAULT_PLACEHOLDER_PATTERNS]
 
     @staticmethod
-    def extract_placeholders(text: str) -> Set[str]:
+    def extract_placeholders(
+        text: str, regexes: Optional[List[re.Pattern]] = None
+    ) -> Set[str]:
         """
         从文本中提取所有占位符
         
@@ -39,7 +52,8 @@ class YMLParser:
             占位符集合
         """
         placeholders = set()
-        for regex in YMLParser.PLACEHOLDER_REGEXES:
+        patterns = regexes or YMLParser.PLACEHOLDER_REGEXES
+        for regex in patterns:
             found = regex.findall(text)
             for item in found:
                 # 处理元组和字符串
