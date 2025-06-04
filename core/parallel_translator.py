@@ -337,6 +337,24 @@ class ParallelTranslator:
                 translator.reset_statistics()
             self.pending_reviews.clear()
 
+    def handle_review_result(self, key_name: str, review_result: dict) -> None:
+        """
+        处理评审结果
+
+        Args:
+            key_name: 翻译键名
+            review_result: 评审结果
+        """
+        try:
+            action = review_result.get("action", "use_ai")
+            self.app_ref.log_message(f"并行翻译器收到评审结果: {key_name} -> {action}", "debug")
+
+            # 这里可以添加更多的评审结果处理逻辑
+            # 例如：统计评审结果、更新翻译质量指标等
+
+        except Exception as e:
+            self.app_ref.log_message(f"处理评审结果时出错: {e}", "error")
+
     def translate_files(
         self,
         source_files: List[str],

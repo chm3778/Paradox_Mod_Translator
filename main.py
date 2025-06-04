@@ -24,6 +24,9 @@ from core.model_manager import ModelManager
 
 from utils.logging_utils import ApplicationLogger
 from utils.file_utils import FileProcessor
+from utils.validation import extract_placeholders
+
+from gui.review_dialog import ReviewDialog
 
 
 class ModTranslatorApp:
@@ -94,6 +97,10 @@ class ModTranslatorApp:
         # 文件相关变量
         self.files_for_translation = []
         self.pending_reviews = {}
+
+        # 评审相关变量
+        self.review_results = {}
+        self.review_queue = []
 
     def _create_main_window(self):
         """创建主窗口"""
@@ -466,6 +473,72 @@ class ModTranslatorApp:
     def log_message(self, message: str, level: str = "info"):
         """记录日志消息"""
         self.logger.log_message(message, level)
+
+    def review_translation(self, key_name: str, original_text: str, ai_translation: str, completion_callback):
+        """
+        触发翻译评审
+
+        Args:
+            key_name: 翻译键名
+            original_text: 原文
+            ai_translation: AI翻译结果
+            completion_callback: 完成回调函数
+        """
+        try:
+            # 提取占位符
+            original_placeholders = extract_placeholders(original_text)
+            translated_placeholders = extract_placeholders(ai_translation)
+
+            # 创建评审对话框
+            review_dialog = ReviewDialog(
+                parent_app_instance=self,
+                root_window=self.root,
+                original_text=original_text,
+                ai_translation=ai_translation,
+                original_placeholders=original_placeholders,
+                translated_placeholders=translated_placeholders,
+                key_name=key_name,
+                completion_callback=completion_callback
+            )
+
+            self.log_message(f"已触发评审对话框: {key_name}", "info")
+
+        except Exception as e:
+            self.log_message(f"创建评审对话框时出错: {e}", "error")
+            # 如果评审对话框创建失败，直接使用AI翻译
+            completion_callback(key_name, {"action": "use_ai", "translation": ai_translation})
+
+    def handle_review_completion(self, key_name: str, result: dict):
+        """
+        处理评审完成结果
+
+        Args:
+            key_name: 翻译键名
+            result: 评审结果字典
+        """
+        try:
+            action = result.get("action", "use_ai")
+            translation = result.get("translation", "")
+
+            # 保存评审结果
+            self.review_results[key_name] = result
+
+            # 记录评审结果
+            if action == "confirm":
+                self.log_message(f"评审确认: {key_name}", "info")
+            elif action == "use_ai":
+                self.log_message(f"使用AI翻译: {key_name}", "info")
+            elif action == "use_original":
+                self.log_message(f"使用原文: {key_name}", "info")
+            elif action == "cancel":
+                self.log_message(f"评审取消: {key_name}", "warn")
+
+            # 通知并行翻译器评审完成
+            if hasattr(self.parallel_translator, 'handle_review_result'):
+                self.parallel_translator.handle_review_result(key_name, result)
+
+        except Exception as e:
+            self.log_message(f"处理评审结果时出错: {e}", "error")
 
     def _on_closing(self):
         """处理窗口关闭事件"""

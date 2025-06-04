@@ -272,16 +272,60 @@ def validate_text_length(text: str, max_length: int = 10000) -> Tuple[bool, Opti
 def validate_config_value(key: str, value, expected_type) -> Tuple[bool, Optional[str]]:
     """
     验证配置值
-    
+
     Args:
         key: 配置键
         value: 配置值
         expected_type: 期望的类型
-        
+
     Returns:
         (是否有效, 错误信息) 的元组
     """
     if not isinstance(value, expected_type):
         return False, f"配置项 {key} 类型错误，期望 {expected_type.__name__}，实际 {type(value).__name__}"
-    
+
     return True, None
+
+
+def extract_placeholders(text: str) -> set:
+    """
+    从文本中提取占位符
+
+    Args:
+        text: 要分析的文本
+
+    Returns:
+        占位符集合
+    """
+    import re
+
+    placeholders = set()
+
+    # 匹配各种占位符格式
+    patterns = [
+        r'\[([^\]]+)\]',      # [PLACEHOLDER]
+        r'\$([^$]+)\$',       # $PLACEHOLDER$
+        r'@([^!]+)!',         # @PLACEHOLDER!
+        r'#([^#]+)#',         # #PLACEHOLDER#
+        r'%([^%]+)%',         # %PLACEHOLDER%
+        r'\{([^}]+)\}',       # {PLACEHOLDER}
+    ]
+
+    for pattern in patterns:
+        matches = re.findall(pattern, text)
+        for match in matches:
+            # 保留完整的占位符格式
+            if pattern.startswith(r'\['):
+                placeholders.add(f'[{match}]')
+            elif pattern.startswith(r'\$'):
+                placeholders.add(f'${match}$')
+            elif pattern.startswith(r'@'):
+                placeholders.add(f'@{match}!')
+            elif pattern.startswith(r'#'):
+                placeholders.add(f'#{match}#')
+            elif pattern.startswith(r'%'):
+                placeholders.add(f'%{match}%')
+            elif pattern.startswith(r'\{'):
+                placeholders.add(f'{{{match}}}')
+
+    return placeholders

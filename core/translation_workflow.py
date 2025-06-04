@@ -217,30 +217,143 @@ class TranslationWorkflow:
         """收集翻译结果"""
         translation_results = {}
         processed_entries = 0
-        
+
+        # 获取评审设置
+        auto_review_mode = self.app_ref.config_manager.get_setting("auto_review_mode", True)
+        delayed_review = self.app_ref.config_manager.get_setting("delayed_review", True)
+
         while processed_entries < total_entries and not self.stop_flag.is_set():
             result = self.parallel_translator.get_translation_result(timeout=1.0)
             if result:
                 processed_entries += 1
+
+                # 检查是否需要评审
+                if auto_review_mode and not delayed_review:
+                    # 即时评审模式
+                    self._handle_immediate_review(result)
+
                 translation_results[result['entry_id']] = result
-                
+
                 # 更新进度
                 if self.progress_callback:
                     self.progress_callback(processed_entries, total_entries)
-                
+
                 progress = (processed_entries / total_entries) * 100
                 self.app_ref.log_message(
-                    f"翻译进度: {processed_entries}/{total_entries} ({progress:.1f}%)", 
+                    f"翻译进度: {processed_entries}/{total_entries} ({progress:.1f}%)",
                     "info"
                 )
-            
+
             # 检查是否被停止
             if self.stop_flag.is_set():
                 self.app_ref.log_message("翻译被用户停止", "warn")
                 break
-        
+
+        # 处理延迟评审
+        if auto_review_mode and delayed_review and translation_results:
+            self._handle_delayed_review(translation_results)
+
         return translation_results
-    
+
+    def _handle_immediate_review(self, result: Dict[str, Any]) -> None:
+        """
+        处理即时评审
+
+        Args:
+            result: 翻译结果
+        """
+        try:
+            # 只对成功的翻译进行评审
+            if result.get('api_error_type') is not None:
+                return
+
+            entry_id = result['entry_id']
+            original_text = result['original_text']
+            translated_text = result['translated_text']
+
+            # 提取键名（去掉文件路径前缀）
+            key_name = entry_id.split(':')[-1] if ':' in entry_id else entry_id
+
+            # 创建评审回调
+            def review_completion_callback(key, review_result):
+                self.app_ref.handle_review_completion(key, review_result)
+                # 更新翻译结果
+                if review_result.get('action') == 'confirm':
+                    result['translated_text'] = review_result.get('translation', translated_text)
+                elif review_result.get('action') == 'use_original':
+                    result['translated_text'] = original_text
+                # 'use_ai' 和 'cancel' 保持原翻译结果不变
+
+            # 触发评审
+            self.app_ref.review_translation(
+                key_name,
+                original_text,
+                translated_text,
+                review_completion_callback
+            )
+
+        except Exception as e:
+            self.app_ref.log_message(f"即时评审处理失败: {e}", "error")
+
+    def _handle_delayed_review(self, translation_results: Dict[str, Dict]) -> None:
+        """
+        处理延迟评审
+
+        Args:
+            translation_results: 所有翻译结果
+        """
+        try:
+            self.app_ref.log_message("开始延迟评审模式", "info")
+
+            # 筛选需要评审的翻译结果（只评审成功的翻译）
+            review_candidates = {
+                entry_id: result for entry_id, result in translation_results.items()
+                if result.get('api_error_type') is None and result.get('translated_text')
+            }
+
+            if not review_candidates:
+                self.app_ref.log_message("没有需要评审的翻译结果", "info")
+                return
+
+            self.app_ref.log_message(f"找到 {len(review_candidates)} 个需要评审的翻译", "info")
+
+            # 逐个进行评审
+            for entry_id, result in review_candidates.items():
+                if self.stop_flag.is_set():
+                    break
+
+                original_text = result['original_text']
+                translated_text = result['translated_text']
+                key_name = entry_id.split(':')[-1] if ':' in entry_id else entry_id
+
+                # 创建评审回调
+                def review_completion_callback(key, review_result, current_result=result):
+                    self.app_ref.handle_review_completion(key, review_result)
+                    # 更新翻译结果
+                    if review_result.get('action') == 'confirm':
+                        current_result['translated_text'] = review_result.get('translation', translated_text)
+                    elif review_result.get('action') == 'use_original':
+                        current_result['translated_text'] = original_text
+                    # 'use_ai' 和 'cancel' 保持原翻译结果不变
+
+                # 触发评审
+                self.app_ref.review_translation(
+                    key_name,
+                    original_text,
+                    translated_text,
+                    review_completion_callback
+                )
+
+                # 等待评审完成（简单的等待机制）
+                # 在实际应用中，可能需要更复杂的同步机制
+                import time
+                time.sleep(0.1)  # 给UI时间处理评审对话框
+
+            self.app_ref.log_message("延迟评审完成", "info")
+
+        except Exception as e:
+            self.app_ref.log_message(f"延迟评审处理失败: {e}", "error")
+
     def _generate_translated_files(
         self, 
         source_files: List[str], 

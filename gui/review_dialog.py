@@ -485,7 +485,11 @@ class ReviewDialog(tk.Toplevel):
 
     def _on_confirm(self) -> None:
         """确认按钮回调"""
-        self.result = self.edited_text_widget.get("1.0", tk.END).strip()
+        edited_text = self.edited_text_widget.get("1.0", tk.END).strip()
+        self.result = {
+            "action": "confirm",
+            "translation": edited_text
+        }
         self.app.log_message(f"ReviewDialog: Confirmed text for key '{self.key_name_arg}'", "debug")
         if self.completion_callback:
             self.completion_callback(self.key_name_arg, self.result)
@@ -493,7 +497,10 @@ class ReviewDialog(tk.Toplevel):
 
     def _on_use_original(self) -> None:
         """使用原文按钮回调"""
-        self.result = self.original_text_arg
+        self.result = {
+            "action": "use_original",
+            "translation": self.original_text_arg
+        }
         self.app.log_message(f"ReviewDialog: Using original text for key '{self.key_name_arg}'", "debug")
         if self.completion_callback:
             self.completion_callback(self.key_name_arg, self.result)
@@ -501,15 +508,22 @@ class ReviewDialog(tk.Toplevel):
 
     def _on_skip_with_ai_text(self) -> None:
         """使用AI翻译按钮回调"""
-        self.result = self.edited_text_widget.get("1.0", tk.END).strip()
-        self.app.log_message(f"ReviewDialog: Using AI text (current edit box) for key '{self.key_name_arg}'", "debug")
+        ai_text = self.ai_translation_arg
+        self.result = {
+            "action": "use_ai",
+            "translation": ai_text
+        }
+        self.app.log_message(f"ReviewDialog: Using AI text for key '{self.key_name_arg}'", "debug")
         if self.completion_callback:
             self.completion_callback(self.key_name_arg, self.result)
         self.destroy()
 
     def _on_cancel(self) -> None:
         """取消按钮回调"""
-        self.result = None
+        self.result = {
+            "action": "cancel",
+            "translation": None
+        }
         self.app.log_message(f"ReviewDialog: Cancelled for key '{self.key_name_arg}'", "debug")
         if self.completion_callback:
             self.completion_callback(self.key_name_arg, self.result)
