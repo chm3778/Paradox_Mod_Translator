@@ -153,10 +153,19 @@ class ModTranslatorApp:
         )
         self.theme_button.pack(side=LEFT, padx=(0, 10))
         
+        # 进度条
+        self.progress_bar = ttk.Progressbar(
+            toolbar,
+            mode="determinate",
+            length=150
+        )
+        self.progress_bar.pack(side=RIGHT, padx=(0, 10))
+        self.progress_bar.pack_forget()
+
         # 状态标签
         self.status_label = ttk.Label(
-            toolbar, 
-            text="就绪", 
+            toolbar,
+            text="就绪",
             font=('Default', 10)
         )
         self.status_label.pack(side=RIGHT)
@@ -394,6 +403,8 @@ class ModTranslatorApp:
 
         self.log_message("开始翻译过程...", "info")
         self.translation_in_progress = True
+        self.progress_bar['value'] = 0
+        self.progress_bar.pack(side=RIGHT, padx=(0, 10))
         self.translate_button.config(state=tk.DISABLED)
         self.stop_button.config(state=tk.NORMAL)
 
@@ -421,7 +432,8 @@ class ModTranslatorApp:
                 source_lang,
                 target_lang,
                 game_style,
-                model_name
+                model_name,
+                progress_callback=self._update_progress
             )
 
             # 在UI线程中更新结果
@@ -455,6 +467,8 @@ class ModTranslatorApp:
         self.stop_translation_flag.clear()
         self.translate_button.config(state=tk.NORMAL)
         self.stop_button.config(state=tk.DISABLED)
+        self.progress_bar.pack_forget()
+        self.progress_bar['value'] = 0
         self.log_message("翻译过程已完成", "info")
 
     def _on_log_message(self, message: str, level: str):
@@ -469,6 +483,13 @@ class ModTranslatorApp:
         """更新日志显示"""
         self.log_text.insert(tk.END, message)
         self.log_text.see(tk.END)
+
+    def _update_progress(self, current: int, total: int):
+        """更新进度条"""
+        def _cb():
+            self.progress_bar['maximum'] = total
+            self.progress_bar['value'] = current
+        self.root.after(0, _cb)
 
     def log_message(self, message: str, level: str = "info"):
         """记录日志消息"""
