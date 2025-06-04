@@ -361,7 +361,8 @@ class ParallelTranslator:
         source_lang: str,
         target_lang: str,
         game_style: str,
-        model_name: str
+        model_name: str,
+        progress_callback: Optional[Callable[[int, int], None]] = None
     ) -> bool:
         """
         翻译文件列表（高级接口）
@@ -381,6 +382,8 @@ class ParallelTranslator:
 
         # 创建工作流程实例
         workflow = TranslationWorkflow(self.app_ref, self.config_manager)
+        if progress_callback:
+            workflow.set_progress_callback(progress_callback)
 
         # 执行翻译
         return workflow.execute_translation(
