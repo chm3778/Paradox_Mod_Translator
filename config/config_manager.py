@@ -34,6 +34,8 @@ class ConfigManager:
             "delayed_review": True,
             "key_rotation_strategy": "round_robin",
             "placeholder_patterns": DEFAULT_PLACEHOLDER_PATTERNS
+            "use_translation_memory": True
+
         }
         self.config = self.load_config()
         self._migrate_legacy_api_key()
