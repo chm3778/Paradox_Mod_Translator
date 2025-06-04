@@ -32,7 +32,8 @@ class ConfigManager:
             "max_concurrent_tasks": 3,
             "auto_review_mode": True,
             "delayed_review": True,
-            "key_rotation_strategy": "round_robin"
+            "key_rotation_strategy": "round_robin",
+            "use_translation_memory": True
         }
         self.config = self.load_config()
         self._migrate_legacy_api_key()
