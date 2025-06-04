@@ -3,6 +3,7 @@
 
 import argparse
 import os
+import sys
 from typing import List
 
 from config.config_manager import ConfigManager
@@ -90,7 +91,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    exit(run_cli(args))
+    sys.exit(run_cli(args))
 
 
 if __name__ == "__main__":
