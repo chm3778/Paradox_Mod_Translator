@@ -35,6 +35,12 @@ class TestConfigManager(unittest.TestCase):
         self.assertEqual(self.config_manager.get_setting("target_language"), "simp_chinese")
         self.assertEqual(self.config_manager.get_setting("max_concurrent_tasks"), 3)
         self.assertTrue(self.config_manager.get_setting("auto_review_mode"))
+
+    def test_placeholder_pattern_default(self):
+        """测试占位符正则默认配置"""
+        patterns = self.config_manager.get_setting("placeholder_patterns")
+        self.assertIsInstance(patterns, list)
+        self.assertIn(r'(\$.*?\$)', patterns)
     
     def test_save_and_load_config(self):
         """测试配置保存和加载"""

@@ -93,7 +93,13 @@ python cli.py -s english -t simp_chinese localisation_folder
     "source_language": "english",
     "target_language": "simp_chinese",
     "max_concurrent_tasks": 3,
-    "api_call_delay": 3.0
+    "api_call_delay": 3.0,
+    "placeholder_patterns": [
+        "(\\$.*?\\$)",
+        "(\\[.*?\\])",
+        "(@\\w+!)",
+        "(#\\w+(?:;\\w+)*.*?#!|\\S*#!)"
+    ]
 }
 ```
 

@@ -28,7 +28,7 @@ class TranslationWorkflow:
         """
         self.app_ref = app_ref
         self.config_manager = config_manager
-        self.yml_parser = YMLParser()
+        self.yml_parser = YMLParser(config_manager=self.config_manager)
         self.file_processor = FileProcessor(self.yml_parser)
         self.parallel_translator = ParallelTranslator(app_ref, config_manager)
 
