@@ -8,7 +8,7 @@ import queue
 import threading
 import time
 import traceback
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Callable
 
 from config.config_manager import ConfigManager
 from .api_key_manager import APIKeyManager

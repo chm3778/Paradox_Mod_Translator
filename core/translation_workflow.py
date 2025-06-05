@@ -329,6 +329,27 @@ class TranslationWorkflow:
             # 提取键名（去掉文件路径前缀）
             key_name = entry_id.split(':')[-1] if ':' in entry_id else entry_id
 
+            # 检查是否启用自动应用功能
+            from utils.validation import extract_placeholders
+            auto_apply_when_placeholders_match = self.app_ref.config_manager.get_setting("auto_apply_when_placeholders_match", True)
+
+            if auto_apply_when_placeholders_match:
+                # 提取占位符
+                original_placeholders = extract_placeholders(original_text)
+                translated_placeholders = extract_placeholders(translated_text)
+
+                # 如果占位符完全匹配，自动应用翻译结果
+                if original_placeholders == translated_placeholders:
+                    self.app_ref.log_message(f"占位符匹配，自动应用翻译结果: {key_name}", "info")
+
+                    # 直接更新翻译结果，无需人工评审
+                    auto_result = {
+                        "action": "use_ai",
+                        "translation": translated_text
+                    }
+                    self.app_ref.handle_review_completion(key_name, auto_result)
+                    return
+
             # 创建评审回调
             def review_completion_callback(key, review_result):
                 self.app_ref.handle_review_completion(key, review_result)
@@ -372,8 +393,47 @@ class TranslationWorkflow:
 
             self.app_ref.log_message(f"找到 {len(review_candidates)} 个需要评审的翻译", "info")
 
-            # 逐个进行评审
-            for entry_id, result in review_candidates.items():
+            # 检查是否启用自动应用功能
+            from utils.validation import extract_placeholders
+            auto_apply_when_placeholders_match = self.app_ref.config_manager.get_setting("auto_apply_when_placeholders_match", True)
+
+            # 分离需要人工评审和可以自动应用的翻译
+            auto_apply_candidates = {}
+            manual_review_candidates = {}
+
+            if auto_apply_when_placeholders_match:
+                for entry_id, result in review_candidates.items():
+                    original_text = result['original_text']
+                    translated_text = result['translated_text']
+
+                    # 提取占位符
+                    original_placeholders = extract_placeholders(original_text)
+                    translated_placeholders = extract_placeholders(translated_text)
+
+                    # 如果占位符完全匹配，加入自动应用列表
+                    if original_placeholders == translated_placeholders:
+                        auto_apply_candidates[entry_id] = result
+                    else:
+                        manual_review_candidates[entry_id] = result
+            else:
+                manual_review_candidates = review_candidates
+
+            # 处理自动应用的翻译
+            if auto_apply_candidates:
+                self.app_ref.log_message(f"自动应用 {len(auto_apply_candidates)} 个占位符匹配的翻译", "info")
+                for entry_id, result in auto_apply_candidates.items():
+                    key_name = entry_id.split(':')[-1] if ':' in entry_id else entry_id
+                    auto_result = {
+                        "action": "use_ai",
+                        "translation": result['translated_text']
+                    }
+                    self.app_ref.handle_review_completion(key_name, auto_result)
+
+            # 逐个进行人工评审
+            if manual_review_candidates:
+                self.app_ref.log_message(f"开始人工评审 {len(manual_review_candidates)} 个翻译", "info")
+
+            for entry_id, result in manual_review_candidates.items():
                 if self.stop_flag.is_set():
                     break
 

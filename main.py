@@ -87,6 +87,7 @@ class ModTranslatorApp:
         self.max_concurrent_tasks_var = tk.IntVar()
         self.auto_review_mode_var = tk.BooleanVar()
         self.delayed_review_var = tk.BooleanVar()
+        self.auto_apply_when_placeholders_match_var = tk.BooleanVar()
         
         # 翻译状态变量
         self.stop_translation_flag = threading.Event()
@@ -354,6 +355,9 @@ class ModTranslatorApp:
             self.delayed_review_var.set(
                 self.config_manager.get_setting("delayed_review", True)
             )
+            self.auto_apply_when_placeholders_match_var.set(
+                self.config_manager.get_setting("auto_apply_when_placeholders_match", True)
+            )
 
             # 加载翻译风格
             style = self.config_manager.get_setting("game_mod_style", "General video game localization, maintain tone of original.")
@@ -509,6 +513,24 @@ class ModTranslatorApp:
             # 提取占位符
             original_placeholders = extract_placeholders(original_text)
             translated_placeholders = extract_placeholders(ai_translation)
+
+            # 检查是否启用自动应用功能
+            auto_apply_when_placeholders_match = self.config_manager.get_setting("auto_apply_when_placeholders_match", True)
+
+            # 如果启用自动应用且占位符完全匹配，则自动应用翻译结果
+            if auto_apply_when_placeholders_match and original_placeholders == translated_placeholders:
+                self.log_message(f"占位符匹配，自动应用翻译结果: {key_name}", "info")
+
+                # 直接调用完成回调，使用AI翻译结果
+                auto_result = {
+                    "action": "use_ai",
+                    "translation": ai_translation
+                }
+
+                if completion_callback:
+                    completion_callback(key_name, auto_result)
+
+                return
 
             # 创建评审对话框
             self.review_dialog = ReviewDialog(
@@ -823,7 +845,16 @@ class ModTranslatorApp:
             variable=self.delayed_review_var,
             command=self._on_review_settings_changed
         )
-        self.delayed_review_check.pack(anchor="w")
+        self.delayed_review_check.pack(anchor="w", pady=(0, 5))
+
+        # 自动应用占位符匹配的翻译
+        self.auto_apply_placeholders_check = ttk.Checkbutton(
+            review_frame,
+            text="占位符匹配时自动应用翻译结果",
+            variable=self.auto_apply_when_placeholders_match_var,
+            command=self._on_review_settings_changed
+        )
+        self.auto_apply_placeholders_check.pack(anchor="w")
 
     # 辅助方法和事件处理
     def _get_supported_languages(self):
@@ -1243,11 +1274,13 @@ class ModTranslatorApp:
         """评审设置改变事件"""
         auto_review = self.auto_review_mode_var.get()
         delayed_review = self.delayed_review_var.get()
+        auto_apply_placeholders = self.auto_apply_when_placeholders_match_var.get()
 
         self.config_manager.set_setting("auto_review_mode", auto_review)
         self.config_manager.set_setting("delayed_review", delayed_review)
+        self.config_manager.set_setting("auto_apply_when_placeholders_match", auto_apply_placeholders)
 
-        self.log_message(f"评审设置已更新 - 自动评审: {auto_review}, 延迟评审: {delayed_review}", "info")
+        self.log_message(f"评审设置已更新 - 自动评审: {auto_review}, 延迟评审: {delayed_review}, 占位符匹配自动应用: {auto_apply_placeholders}", "info")
 
     def run(self):
         """运行应用程序"""

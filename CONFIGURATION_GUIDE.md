@@ -72,6 +72,11 @@
   - 开启: 所有翻译完成后一次性评审
   - 关闭: 实时评审每个翻译
 
+- **占位符匹配时自动应用翻译结果**: 智能自动化功能
+  - 开启: 当原文和译文占位符完全匹配时，自动应用翻译结果，无需人工审议
+  - 关闭: 所有翻译都需要人工评审
+  - 优势: 大幅减少人工干预，提高翻译效率
+
 ## ⚙️ 配置文件结构
 
 配置信息保存在 `translator_config.json` 文件中：
@@ -90,6 +95,7 @@
     "api_call_delay": 3.0,
     "auto_review_mode": true,
     "delayed_review": true,
+    "auto_apply_when_placeholders_match": true,
     "game_mod_style": "Strategy game localization, formal and precise tone.",
     "key_rotation_strategy": "round_robin",
     "placeholder_patterns": [
@@ -132,12 +138,23 @@
 ```json
 {
     "auto_review_mode": false,
-    "delayed_review": true
+    "delayed_review": true,
+    "auto_apply_when_placeholders_match": true
 }
 ```
 - 适用于: 大量文件翻译，后期统一质检
 
-### 4. 自定义占位符模式
+### 4. 智能自动化
+```json
+{
+    "auto_review_mode": true,
+    "delayed_review": true,
+    "auto_apply_when_placeholders_match": true
+}
+```
+- 适用于: 占位符匹配的翻译自动应用，减少人工干预
+
+### 5. 自定义占位符模式
 ```json
 {
     "placeholder_patterns": [

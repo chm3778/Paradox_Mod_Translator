@@ -32,6 +32,7 @@ class ConfigManager:
             "max_concurrent_tasks": 3,
             "auto_review_mode": True,
             "delayed_review": True,
+            "auto_apply_when_placeholders_match": True,
             "key_rotation_strategy": "round_robin",
             "placeholder_patterns": DEFAULT_PLACEHOLDER_PATTERNS,
             "use_translation_memory": True
