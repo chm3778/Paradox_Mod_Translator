@@ -490,7 +490,7 @@ class ModTranslatorApp:
             translated_placeholders = extract_placeholders(ai_translation)
 
             # 创建评审对话框
-            review_dialog = ReviewDialog(
+            self.review_dialog = ReviewDialog(
                 parent_app_instance=self,
                 root_window=self.root,
                 original_text=original_text,
@@ -518,7 +518,6 @@ class ModTranslatorApp:
         """
         try:
             action = result.get("action", "use_ai")
-            translation = result.get("translation", "")
 
             # 保存评审结果
             self.review_results[key_name] = result
@@ -856,7 +855,7 @@ class ModTranslatorApp:
         self.style_text.insert(1.0, style)
         self.game_mod_style_prompt.set(style)
         self.config_manager.set_setting("game_mod_style", style)
-        self.log_message(f"翻译风格已设置为预设", "info")
+        self.log_message("翻译风格已设置为预设", "info")
 
     def _add_api_key(self):
         """添加API密钥"""
