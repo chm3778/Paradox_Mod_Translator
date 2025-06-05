@@ -11,6 +11,7 @@ from typing import List, Dict, Optional, Callable, Any, Tuple
 from config.config_manager import ConfigManager
 from parsers.yml_parser import YMLParser
 from utils.file_utils import FileProcessor
+from utils.translation_memory import TranslationMemory
 from .parallel_translator import ParallelTranslator
 
 
@@ -27,10 +28,18 @@ class TranslationWorkflow:
         """
         self.app_ref = app_ref
         self.config_manager = config_manager
-        self.yml_parser = YMLParser()
+        self.yml_parser = YMLParser(config_manager=self.config_manager)
         self.file_processor = FileProcessor(self.yml_parser)
         self.parallel_translator = ParallelTranslator(app_ref, config_manager)
-        
+
+        self.use_translation_memory = self.config_manager.get_setting(
+            "use_translation_memory", True
+        )
+        memory_file = os.path.join(
+            os.path.dirname(config_manager.config_file_path), "translation_memory.json"
+        )
+        self.translation_memory = TranslationMemory(memory_file)
+
         # 工作流程状态
         self.is_running = False
         self.stop_flag = threading.Event()
@@ -134,7 +143,10 @@ class TranslationWorkflow:
                 return False
             
             # 等待翻译完成并收集结果
-            translation_results = self._collect_translation_results(total_entries)
+            translation_results = self._collect_translation_results(
+                total_entries,
+                self.cached_results
+            )
             
             # 停止并行翻译器
             self.parallel_translator.stop_workers()
@@ -147,6 +159,17 @@ class TranslationWorkflow:
             success = self._generate_translated_files(
                 filtered_files, translation_results, target_lang
             )
+
+            if self.use_translation_memory:
+                for res in translation_results.values():
+                    if res.get('translated_text'):
+                        self.translation_memory.add(
+                            res['original_text'],
+                            res['translated_text'],
+                            source_lang,
+                            target_lang
+                        )
+                self.translation_memory.save()
             
             self.app_ref.log_message(
                 f"翻译工作流程完成：处理了 {len(translation_results)} 个条目", 
@@ -179,6 +202,7 @@ class TranslationWorkflow:
     ) -> int:
         """添加翻译任务"""
         total_entries = 0
+        self.cached_results: Dict[str, Dict] = {}
         
         for file_path in file_paths:
             if self.stop_flag.is_set():
@@ -190,9 +214,32 @@ class TranslationWorkflow:
                     continue
                 
                 for entry in entries:
-                    if entry['value'].strip():  # 只翻译非空值
+                    if not entry['value'].strip():
+                        continue
+
+                    entry_id = f"{file_path}:{entry['key']}"
+                    cached_text = None
+                    if self.use_translation_memory:
+                        cached_text = self.translation_memory.get(
+                            entry['value'], source_lang, target_lang
+                        )
+                    if cached_text:
+                        self.cached_results[entry_id] = {
+                            'entry_id': entry_id,
+                            'original_text': entry['value'],
+                            'translated_text': cached_text,
+                            'token_count': 0,
+                            'api_error_type': None,
+                            'original_line_content': entry.get('original_line_content'),
+                            'source_lang': source_lang
+                        }
+                        self.app_ref.log_message(
+                            f"缓存命中: {entry['key']} -> {cached_text[:30]}...",
+                            "debug"
+                        )
+                    else:
                         self.parallel_translator.add_translation_task(
-                            entry_id=f"{file_path}:{entry['key']}",
+                            entry_id=entry_id,
                             text=entry['value'],
                             source_lang=source_lang,
                             target_lang=target_lang,
@@ -200,7 +247,7 @@ class TranslationWorkflow:
                             model_name=model_name,
                             original_line_content=entry.get('original_line_content')
                         )
-                        total_entries += 1
+                    total_entries += 1
                 
                 self.app_ref.log_message(
                     f"已添加文件 {os.path.basename(file_path)} 的 {len(entries)} 个翻译任务", 
@@ -213,10 +260,18 @@ class TranslationWorkflow:
         
         return total_entries
     
-    def _collect_translation_results(self, total_entries: int) -> Dict[str, Dict]:
+    def _collect_translation_results(self, total_entries: int, initial_results: Optional[Dict[str, Dict]] = None) -> Dict[str, Dict]:
         """收集翻译结果"""
-        translation_results = {}
-        processed_entries = 0
+        translation_results = initial_results.copy() if initial_results else {}
+        processed_entries = len(translation_results)
+
+        if processed_entries and self.progress_callback:
+            self.progress_callback(processed_entries, total_entries)
+            progress = (processed_entries / total_entries) * 100
+            self.app_ref.log_message(
+                f"翻译进度: {processed_entries}/{total_entries} ({progress:.1f}%)",
+                "info",
+            )
 
         # 获取评审设置
         auto_review_mode = self.app_ref.config_manager.get_setting("auto_review_mode", True)

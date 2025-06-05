@@ -24,6 +24,12 @@ MODEL_RPM = {
 # 配置文件相关常量
 CONFIG_FILE = "translator_config.json"
 DEFAULT_API_KEY_PLACEHOLDER = "YOUR_GEMINI_API_KEY"
+DEFAULT_PLACEHOLDER_PATTERNS = [
+    r'(\$.*?\$)',
+    r'(\[.*?\])',
+    r'(@\w+!)',
+    r'(#\w+(?:;\w+)*.*?#!|\S*#!)'
+]
 
 # 支持的语言列表
 SUPPORTED_LANGUAGES = {

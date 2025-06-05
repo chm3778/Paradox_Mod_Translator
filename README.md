@@ -58,6 +58,13 @@ python start.py
    python main.py
    ```
 
+### 方法四：命令行模式
+
+无需图形界面时，可以直接调用 `cli.py`：
+```bash
+python cli.py -s english -t simp_chinese localisation_folder
+```
+
 ## 📋 系统要求
 
 - **Python**: 3.8 或更高版本
@@ -86,7 +93,13 @@ python start.py
     "source_language": "english",
     "target_language": "simp_chinese",
     "max_concurrent_tasks": 3,
-    "api_call_delay": 3.0
+    "api_call_delay": 3.0,
+    "placeholder_patterns": [
+        "(\\$.*?\\$)",
+        "(\\[.*?\\])",
+        "(@\\w+!)",
+        "(#\\w+(?:;\\w+)*.*?#!|\\S*#!)"
+    ]
 }
 ```
 
