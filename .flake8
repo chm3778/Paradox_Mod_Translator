@@ -1,0 +1,77 @@
+[flake8]
+# Flake8代码风格检查配置
+
+# 最大行长度（与black保持一致）
+max-line-length = 88
+
+# 最大复杂度
+max-complexity = 10
+
+# 排除的目录和文件
+exclude = 
+    .git,
+    __pycache__,
+    .pytest_cache,
+    .mypy_cache,
+    .tox,
+    .venv,
+    venv,
+    build,
+    dist,
+    *.egg-info,
+    .eggs
+
+# 忽略的错误代码
+ignore = 
+    # E203: whitespace before ':' (与black冲突)
+    E203,
+    # E501: line too long (由black处理)
+    E501,
+    # W503: line break before binary operator (与PEP8新标准冲突)
+    W503,
+    # E402: module level import not at top of file
+    E402,
+    # F401: imported but unused (在__init__.py中常见)
+    F401
+
+# 选择的错误代码（严格检查）
+select = 
+    # Pyflakes错误
+    F,
+    # Pycodestyle错误
+    E,
+    # Pycodestyle警告
+    W,
+    # McCabe复杂度
+    C
+
+# 每个文件的最大错误数
+max-doc-length = 72
+
+# 统计信息
+statistics = True
+count = True
+
+# 显示源代码
+show-source = True
+
+# 格式化输出
+format = %(path)s:%(row)d:%(col)d: %(code)s %(text)s
+
+# 针对特定文件的配置
+per-file-ignores = 
+    # 测试文件可以有更长的行和更复杂的结构
+    tests/*:E501,C901
+    # __init__.py文件可以有未使用的导入
+    __init__.py:F401
+    # 主程序文件可能有复杂的GUI逻辑
+    main.py:C901
+    # CLI文件可能有复杂的参数处理
+    cli.py:C901
+
+# 文档字符串约定
+docstring-convention = google
+
+# 导入顺序检查（需要flake8-import-order插件）
+import-order-style = google
+application-import-names = config,core,gui,parsers,utils

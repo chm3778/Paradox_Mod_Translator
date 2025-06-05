@@ -1,0 +1,25 @@
+# CODEOWNERS文件
+# 定义代码审查的责任人
+
+# 全局默认审查者
+* @chm3778
+
+# 核心配置文件
+/config/ @chm3778
+/requirements*.txt @chm3778
+/pyproject.toml @chm3778
+/.github/ @chm3778
+
+# 核心翻译逻辑
+/core/ @chm3778
+/parsers/ @chm3778
+
+# 测试文件
+/tests/ @chm3778
+/test_*.py @chm3778
+/run_tests.py @chm3778
+
+# 文档
+/README.md @chm3778
+/CONFIGURATION_GUIDE.md @chm3778
+/BUILD_INSTRUCTIONS.md @chm3778
