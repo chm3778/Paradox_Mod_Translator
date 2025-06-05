@@ -18,6 +18,8 @@ mypy>=1.0.0
 # 测试框架和覆盖率工具
 pytest>=7.0.0
 pytest-cov>=4.0.0
+pytest-xdist>=3.0.0  # 并行测试
+pytest-timeout>=2.1.0  # 测试超时
 
 # 代码复杂度分析
 mccabe>=0.7.0
@@ -27,6 +29,8 @@ isort>=5.12.0
 
 # 安全漏洞检查
 bandit>=1.7.0
+pip-audit>=2.6.0  # 依赖安全扫描
+safety>=2.3.0  # 额外的安全检查
 
 # 文档生成工具
 sphinx>=6.0.0
@@ -37,6 +41,15 @@ pyinstaller>=5.0.0
 
 # 性能分析工具
 memory-profiler>=0.60.0
+psutil>=5.9.0  # 系统和进程监控
 
 # 彩色日志输出
 colorlog>=6.7.0
+
+# 代码质量增强工具
+flake8-import-order>=0.18.0  # 导入顺序检查
+flake8-docstrings>=1.7.0  # 文档字符串检查
+flake8-bugbear>=23.0.0  # 额外的bug检查
+
+# 类型检查增强
+types-requests>=2.31.0  # requests类型提示

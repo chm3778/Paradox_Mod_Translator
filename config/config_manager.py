@@ -33,7 +33,7 @@ class ConfigManager:
             "auto_review_mode": True,
             "delayed_review": True,
             "key_rotation_strategy": "round_robin",
-            "placeholder_patterns": DEFAULT_PLACEHOLDER_PATTERNS
+            "placeholder_patterns": DEFAULT_PLACEHOLDER_PATTERNS,
             "use_translation_memory": True
 
         }

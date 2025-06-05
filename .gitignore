@@ -41,6 +41,18 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
+# 代码质量工具报告
+bandit-report.json
+pip-audit-report.json
+safety-report.json
+mypy-report.txt
+flake8-report.txt
+
+# 构建产物
+dist-windows/
+dist-unix/
+dist-macos/
+
 # Translations
 *.mo
 *.pot
