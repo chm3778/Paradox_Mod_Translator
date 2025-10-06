@@ -311,6 +311,15 @@ Example: $$Translated text here, with all original [placeholders] and $variables
             if raw_text is not None:  # API调用成功
                 final_translation = self.extract_final_translation(raw_text)
 
+                if final_translation is None:
+                    # This indicates a format error in the API response.
+                    self.app_ref.log_message(
+                        f"翻译器 {self.translator_id}: 翻译响应格式错误，无法提取最终翻译。",
+                        "error"
+                    )
+                    # Return original text, 0 tokens, and a specific error type.
+                    return text_to_translate, 0, "TRANSLATION_FORMAT_ERROR"
+
                 # 更新滑动窗口中的token计数
                 if isinstance(token_count_or_error, int) and token_count_or_error >= 0:
                     self.token_window.append(token_count_or_error)
@@ -324,7 +333,7 @@ Example: $$Translated text here, with all original [placeholders] and $variables
                         "warn"
                     )
 
-                return final_translation or text_to_translate, token_count_or_error, None
+                return final_translation, token_count_or_error, None
 
             # API调用失败
             last_error_type = token_count_or_error if isinstance(token_count_or_error, str) else "API_CALL_FAILED_UNKNOWN"
